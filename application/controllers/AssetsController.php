@@ -65,7 +65,7 @@ class AssetsController extends Controller
      * @param string $filename The name of the file to find
      * @param string $baseDir The base directory to search within
      *
-     * @return string|null The absolute path of the file if found and valid, or null otherwise
+     * @return ?string The absolute path of the file if found and valid, or null otherwise
      */
     protected function findFileInPath(string $filename, string $baseDir): ?string
     {

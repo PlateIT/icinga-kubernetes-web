@@ -45,10 +45,10 @@ class Environment extends BaseHtmlElement
      * Create Environment nodes
      *
      * @param Model $currentObject The object whose parents and children should be shown
-     * @param Query|null $parents The query for parents
-     * @param Query|null $children The query for children
-     * @param mixed|null $parentsFilter The filter for parents
-     * @param mixed|null $childrenFilter The filter for children
+     * @param ?Query $parents The query for parents
+     * @param ?Query $children The query for children
+     * @param ?mixed $parentsFilter The filter for parents
+     * @param ?mixed $childrenFilter The filter for children
      */
     public function __construct(
         protected Model $currentObject,
