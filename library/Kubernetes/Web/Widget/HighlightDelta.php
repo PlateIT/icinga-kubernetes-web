@@ -19,7 +19,7 @@ class HighlightDelta extends BaseHtmlElement
         protected string $short,
         ?Attributes $attributes = null
     ) {
-        if (!str_contains($long, $short)) {
+        if (! str_contains($long, $short)) {
             throw new InvalidArgumentException('Short name must be part of long name');
         }
 
