@@ -44,7 +44,9 @@ class AssetsController extends Controller
         } else {
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             $mimeType = finfo_file($finfo, $asset);
-            finfo_close($finfo);
+            if (version_compare(PHP_VERSION, '8.5.0', '<')) {
+                finfo_close($finfo);
+            }
 
             $this->getResponse()
                 ->setHeader('ETag', $eTag)
@@ -65,7 +67,7 @@ class AssetsController extends Controller
      * @param string $filename The name of the file to find
      * @param string $baseDir The base directory to search within
      *
-     * @return string|null The absolute path of the file if found and valid, or null otherwise
+     * @return ?string The absolute path of the file if found and valid, or null otherwise
      */
     protected function findFileInPath(string $filename, string $baseDir): ?string
     {

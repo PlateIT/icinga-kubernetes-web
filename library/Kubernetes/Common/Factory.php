@@ -136,7 +136,7 @@ abstract class Factory
      *
      * @param string $kind The kind to pluralize
      *
-     * @return string|null The pluralized kind or null if not found
+     * @return ?string The pluralized kind or null if not found
      */
     public static function pluralizeKind(string $kind): ?string
     {
@@ -215,10 +215,11 @@ abstract class Factory
      * Retrieves a resource by its kind.
      *
      * @param string $kind The kind of the resource
+     * @param ?Connection $db The connection to query
      *
-     * @return Query|null
+     * @return ?Query
      */
-    public static function fetchResource(string $kind, Connection $db = null): ?Query
+    public static function fetchResource(string $kind, ?Connection $db = null): ?Query
     {
         $kind = static::canonicalizeKind($kind);
 
