@@ -11,6 +11,7 @@ use ipl\Html\Attributes;
 use ipl\Html\BaseHtmlElement;
 use ipl\Html\HtmlElement;
 use ipl\Stdlib\Filter;
+use Ramsey\Uuid\Uuid;
 
 use function Icinga\Module\Kubernetes\yield_iterable;
 
@@ -37,7 +38,9 @@ class ServiceIcingaStateReason extends BaseHtmlElement
     {
         $namespaceSlashName = $this->service->namespace . "/" . $this->service->name;
         $pods = yield_iterable(
-            Pod::on(Database::connection())->filter(Filter::equal('service.uuid', $this->service->uuid))
+            Pod::on(Database::connection())->filter(
+                Filter::equal('service.uuid', Uuid::fromBytes($this->service->uuid)->toString())
+            )
         );
 
         if (! $pods->valid()) {

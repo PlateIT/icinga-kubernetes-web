@@ -9,12 +9,15 @@ use Icinga\Module\Kubernetes\Model\ReplicaSet;
 use ipl\Html\Attributes;
 use ipl\Html\HtmlElement;
 use ipl\Stdlib\Filter;
+use Ramsey\Uuid\Uuid;
 
 class DeploymentIcingaStateReason extends WorkloadIcingaStateReason
 {
     protected function assemble(): void
     {
-        $rs = ReplicaSet::on(Database::connection())->filter(Filter::equal('owner.owner_uuid', $this->uuid))->first();
+        $rs = ReplicaSet::on(Database::connection())->filter(
+            Filter::equal('owner.owner_uuid', Uuid::fromBytes($this->uuid)->toString())
+        )->first();
 
         [$kind, $namespaceSlashName, $reason] = explode(' ', $this->icingaStateReason, 3);
         $workloadName = explode('/', $namespaceSlashName)[1];

@@ -5,6 +5,7 @@
 namespace Icinga\Module\Kubernetes\Common;
 
 use DateTimeInterface;
+use ipl\Sql\Adapter\Pgsql;
 use ipl\Sql\Connection;
 use ipl\Sql\Select;
 use PDO;
@@ -176,6 +177,7 @@ class Metrics
         string ...$categories
     ): array {
         $data = [];
+        $uuid = static::uuidParam($uuid);
 
         foreach ($categories as $category) {
             $rs = Database::connection()->YieldAll(
@@ -392,6 +394,7 @@ class Metrics
         string ...$categories
     ): array {
         $data = [];
+        $uuid = static::uuidParam($uuid);
 
         foreach ($categories as $category) {
             $rows = Database::connection()->YieldAll(
@@ -442,5 +445,23 @@ class Metrics
                 $data[$ts] = 0;
             }
         }
+    }
+
+    protected static function uuidParam(string $uuid): string
+    {
+        if (! Database::connection()->getAdapter() instanceof Pgsql) {
+            return $uuid;
+        }
+
+        if (str_starts_with($uuid, '\\x')) {
+            return $uuid;
+        }
+
+        $hex = str_replace('-', '', $uuid);
+        if (strlen($hex) === 32 && ctype_xdigit($hex)) {
+            return "\\x$hex";
+        }
+
+        return '\\x' . bin2hex($uuid);
     }
 }

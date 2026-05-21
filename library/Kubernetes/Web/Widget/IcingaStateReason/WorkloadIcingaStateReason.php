@@ -9,12 +9,15 @@ use Icinga\Module\Kubernetes\Model\Pod;
 use ipl\Html\Attributes;
 use ipl\Html\HtmlElement;
 use ipl\Stdlib\Filter;
+use Ramsey\Uuid\Uuid;
 
 class WorkloadIcingaStateReason extends PodIcingaStateReason
 {
     protected function assemble(): void
     {
-        $pods = Pod::on(Database::connection())->filter(Filter::equal('owner.owner_uuid', $this->uuid));
+        $pods = Pod::on(Database::connection())->filter(
+            Filter::equal('owner.owner_uuid', Uuid::fromBytes($this->uuid)->toString())
+        );
 
         [$kind, $namespaceSlashName, $reason] = explode(' ', $this->icingaStateReason, 3);
         $workloadName = explode('/', $namespaceSlashName)[1];
