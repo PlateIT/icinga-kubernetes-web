@@ -202,26 +202,8 @@ class Environment extends BaseHtmlElement
             ? 'M 0 %d C 50 %d 50 50 100 50'
             : 'M 0 50 C 50 50 50 %d 100 %d';
 
-        /**
-         * @var $pathCoordinates array<int, array<int>> The `key` contains the count of curves to draw.
-         *
-         * The Svg Element is a square with fixed width and has a viewBox attr `0 0 100 100`. It is centred vertically
-         * to the parent element.
-         *
-         * When 4 (max.) dependency nodes are present, coordinate 0/100 begins exactly in the middle of
-         * the first/last node, coordinate 50 is exactly the center of the parent element. This makes the curve
-         * calculation easier.
-         */
-        $pathCoordinates = [
-            0 => [],
-            1 => [50],
-            2 => [33, 66],
-            3 => [17, 50, 83],
-            4 => [1, 33, 66, 99]
-        ];
-
         $svg = new HtmlElement('svg', Attributes::create(['viewBox' => '0 0 100 100', 'class' => 'svg-lines']));
-        foreach ($pathCoordinates[$lineCount] as $coordinate) {
+        foreach ($this->createPathCoordinates($lineCount) as $coordinate) {
             $svg->addHtml(
                 new HtmlElement(
                     'path',
@@ -235,6 +217,24 @@ class Environment extends BaseHtmlElement
         }
 
         return $svg;
+    }
+
+    private function createPathCoordinates(int $lineCount): array
+    {
+        if ($lineCount <= 0) {
+            return [];
+        }
+
+        if ($lineCount === 1) {
+            return [50];
+        }
+
+        $coordinates = [];
+        for ($i = 0; $i < $lineCount; $i++) {
+            $coordinates[] = (int) round(1 + (98 * $i / ($lineCount - 1)));
+        }
+
+        return $coordinates;
     }
 
     /**

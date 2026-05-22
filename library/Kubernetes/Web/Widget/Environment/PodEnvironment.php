@@ -40,11 +40,13 @@ class PodEnvironment implements ValidHtml
             ->filter(Filter::equal('pod_uuid', (string) Uuid::fromBytes($this->pod->uuid)))->first();
 
 
+        $podOwnerKind = null;
         if ($podOwner !== null) {
-            $podOwnerKind = Factory::fetchResource($podOwner->kind)
-                ->filter(Filter::equal('uuid', (string) Uuid::fromBytes($podOwner->owner_uuid)));
-        } else {
-            $podOwnerKind = null;
+            $podOwnerResource = Factory::fetchResource($podOwner->kind);
+            if ($podOwnerResource !== null) {
+                $podOwnerKind = $podOwnerResource
+                    ->filter(Filter::equal('uuid', (string) Uuid::fromBytes($podOwner->owner_uuid)));
+            }
         }
 
         return (new HtmlDocument())
