@@ -21,7 +21,7 @@ class EventsController extends ListController
         $allowedKinds = [];
         foreach (Auth::PERMISSIONS as $kind => $permission) {
             if (Auth::getInstance()->canList($kind)) {
-                $allowedKinds[] = $kind;
+                $allowedKinds[] = $this->getKubernetesKind($kind);
             }
         }
 
@@ -58,5 +58,27 @@ class EventsController extends ListController
     protected function getFavorable(): false
     {
         return false;
+    }
+
+    protected function getKubernetesKind(string $kind): string
+    {
+        return match ($kind) {
+            'configmap'             => 'ConfigMap',
+            'cronjob'               => 'CronJob',
+            'daemonset'             => 'DaemonSet',
+            'deployment'            => 'Deployment',
+            'ingress'               => 'Ingress',
+            'job'                   => 'Job',
+            'namespace'             => 'Namespace',
+            'node'                  => 'Node',
+            'persistentvolume'      => 'PersistentVolume',
+            'persistentvolumeclaim' => 'PersistentVolumeClaim',
+            'pod'                   => 'Pod',
+            'replicaset'            => 'ReplicaSet',
+            'secret'                => 'Secret',
+            'service'               => 'Service',
+            'statefulset'           => 'StatefulSet',
+            default                 => $kind
+        };
     }
 }
