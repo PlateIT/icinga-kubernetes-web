@@ -32,9 +32,7 @@ class IcingaStateDashlet extends Dashlet
             'count' => new Expression('COUNT(*)')
         ]);
 
-        $q->getSelectBase()
-            ->groupBy('icinga_state')
-            ->resetOrderBy();
+        $q->getSelectBase()->groupBy('icinga_state');
 
         $counts = array_fill_keys(
             [
@@ -47,7 +45,7 @@ class IcingaStateDashlet extends Dashlet
             0
         );
 
-        foreach ($q as $count) {
+        foreach ($q->getDb()->select($q->assembleSelect()->resetOrderBy()) as $count) {
             $counts[$count->icinga_state] = $count->count;
         }
 

@@ -32,9 +32,7 @@ class KubernetesPhaseDashlet extends Dashlet
             'count' => new Expression('COUNT(*)')
         ]);
 
-        $q->getSelectBase()
-            ->groupBy('phase')
-            ->resetOrderBy();
+        $q->getSelectBase()->groupBy('phase');
 
         $counts = array_fill_keys(
             [
@@ -50,7 +48,7 @@ class KubernetesPhaseDashlet extends Dashlet
             0
         );
 
-        foreach ($q as $count) {
+        foreach ($q->getDb()->select($q->assembleSelect()->resetOrderBy()) as $count) {
             $counts[$count->phase] = $count->count;
         }
 
