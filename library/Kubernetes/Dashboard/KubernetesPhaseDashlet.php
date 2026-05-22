@@ -32,7 +32,9 @@ class KubernetesPhaseDashlet extends Dashlet
             'count' => new Expression('COUNT(*)')
         ]);
 
-        $q->getSelectBase()->groupBy('phase');
+        $q->getSelectBase()
+            ->groupBy('phase')
+            ->resetOrderBy();
 
         $counts = array_fill_keys(
             [

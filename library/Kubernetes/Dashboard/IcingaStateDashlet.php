@@ -32,7 +32,9 @@ class IcingaStateDashlet extends Dashlet
             'count' => new Expression('COUNT(*)')
         ]);
 
-        $q->getSelectBase()->groupBy('icinga_state');
+        $q->getSelectBase()
+            ->groupBy('icinga_state')
+            ->resetOrderBy();
 
         $counts = array_fill_keys(
             [
