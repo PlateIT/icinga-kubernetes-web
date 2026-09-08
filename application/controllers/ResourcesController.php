@@ -170,6 +170,9 @@ class ResourcesController extends Controller
             $pages = array_fill(0, count($selectorList), ['items' => []]);
             foreach ($selectorList as $index => $selector) {
                 $queryParams = $params;
+                $search = $queryParams['name'] ?? '';
+                unset($queryParams['name']);
+                if ($search !== '') $queryParams['namePattern'] = strpos($search, '*') === false ? '*' . $search . '*' : $search;
                 if ($problems) unset($queryParams['state']);
                 $restricted = $this->intersect($queryParams, $selector);
                 if ($restricted !== null) {
@@ -271,7 +274,7 @@ class ResourcesController extends Controller
                 return;
             }
             $this->view->resource = $resource;
-            $this->view->metricsUrl = $this->view->href('kubernetes/resources/metrics', ['id' => $id]);
+            $this->view->metricsUrl = $resource['kind'] === 'Event' ? null : $this->view->href('kubernetes/resources/metrics', ['id' => $id]);
             $this->view->canShowLogs = Auth::getInstance()->hasPermission('kubernetes/resources/logs');
             $this->view->logs = null;
             $this->view->manifest = null;
@@ -366,6 +369,20 @@ class ResourcesController extends Controller
             return $refs;
         };
         $refs = $resolve(Relationships::references($resource, $manifest));
+        if ($resource['kind'] !== 'Event') {
+            foreach ($selectors ?: [[]] as $selector) {
+                $query = $this->intersect(['cluster' => $resource['cluster'], 'namespace' => $resource['namespace'] ?? '', 'kind' => 'Event', 'eventForUID' => $resource['uid'], 'limit' => 50], $selector);
+                if ($query === null) continue;
+                $page = $client->get('resources', $query); $this->assertPage($page);
+                if (! empty($page['nextCursor'])) $this->view->relationsError = $this->translate('Only the first 50 related events are shown');
+                foreach ($page['items'] as $event) {
+                    $this->assertResource($event);
+                    $summary = $event['summary'] ?? [];
+                    if ($event['kind'] !== 'Event' || $event['cluster'] !== $resource['cluster'] || ($summary['regarding.uid'] ?? $summary['involvedObject.uid'] ?? '') !== $resource['uid'] || ! $access->permits($event, $selectors)) continue;
+                    $connections[$event['id']] = ['relation' => 'Event', 'kind' => 'Event', 'name' => $event['name'], 'resource' => $event];
+                }
+            }
+        }
         $inspect = [];
         // Resolve one additional owner/storage hop: Pod -> ReplicaSet -> Deployment,
         // or Pod -> PVC -> PV. These are only queried after authorization above.

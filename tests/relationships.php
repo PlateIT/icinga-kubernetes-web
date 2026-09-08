@@ -3,6 +3,9 @@ require dirname(__DIR__) . '/library/Kubernetes/Web/Relationships.php';
 use Icinga\Module\Kubernetes\Web\Relationships;
 function checkRelation(bool $ok, string $message): void { if (! $ok) throw new RuntimeException($message); }
 $r = ['kind' => 'Pod', 'namespace' => 'demo'];
+$eventRefs = Relationships::references(['kind' => 'Event', 'namespace' => 'demo'], ['involvedObject' => ['apiVersion' => 'v1', 'kind' => 'Pod', 'namespace' => 'demo', 'name' => 'web', 'uid' => 'original-pod', 'fieldPath' => 'spec.containers{php}']]);
+$podRef = array_values(array_filter($eventRefs, static fn ($ref) => $ref['kind'] === 'Pod'))[0];
+checkRelation($podRef['uid'] === 'original-pod' && str_contains($podRef['relation'], 'php'), 'Event links retain object identity and container reference');
 $m = ['metadata' => ['namespace' => 'demo', 'labels' => ['app' => 'api'], 'ownerReferences' => [['kind' => 'ReplicaSet', 'name' => 'api-rs', 'apiVersion' => 'apps/v1', 'uid' => 'owner-id']]],
     'spec' => ['nodeName' => 'node-1', 'serviceAccountName' => 'api-sa', 'volumes' => [
         ['persistentVolumeClaim' => ['claimName' => 'data']], ['projected' => ['sources' => [['secret' => ['name' => 'credentials']]]]]],

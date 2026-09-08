@@ -19,6 +19,7 @@ final class ResourceView
     {
         $visible = []; $unresolved = [];
         foreach ($connections as $connection) {
+            if (($connection['relation'] ?? '') === 'Event') continue;
             if (isset($connection['resource'])) $visible[$connection['resource']['id']] = $connection;
             else $unresolved[] = $connection;
         }
@@ -86,6 +87,9 @@ final class ResourceView
             return $value;
         };
         $fields = [
+            'Event type' => 'type', 'Reason' => 'reason', 'Message' => 'message', 'Note' => 'note',
+            'Occurrences' => 'count', 'Reporting controller' => 'reportingController',
+            'Reporting component' => 'reportingComponent', 'Container reference' => 'involvedObject.fieldPath',
             'Created' => 'metadata.creationTimestamp', 'Phase' => 'status.phase',
             'Node' => 'spec.nodeName', 'Pod IP' => 'status.podIP',
             'Restart policy' => 'spec.restartPolicy', 'Quality of service' => 'status.qosClass',

@@ -313,5 +313,18 @@ namespace {
     $controller->params = new TestParams(['state' => 'problem']);
     $controller->indexAction();
     check($controller->view->error === null && $controller->view->title === 'Kubernetes Problems', 'Problem overview failed');
+    foreach (['web' => '*web*', 'icingaweb2*' => 'icingaweb2*'] as $search => $pattern) {
+        $client = new FakeClient();
+        $client->many = static function (array $requests) use ($pattern): array {
+            check($requests[0]['query']['namePattern'] === $pattern, 'Search must support contains and wildcard patterns');
+            check($requests[0]['query']['name'] === 'icingaweb2-allowed', 'Search must preserve exact role restrictions');
+            return [['items' => [], 'snapshot' => 'now', 'freshness' => 'live']];
+        };
+        $controller = new TestResourcesController($client, new FakeAccess([['name' => 'icingaweb2-allowed']]));
+        $controller->permissions = ['kubernetes/resources/show'];
+        $controller->params = new TestParams(['name' => $search]);
+        $controller->indexAction();
+        check($controller->view->error === null, 'Name pattern search failed');
+    }
     echo "standalone controller integration tests: ok\n";
 }

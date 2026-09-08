@@ -2,7 +2,7 @@
 <div class="icinga-module module-kubernetes">
 <div class="icinga-kubernetes-live" data-kube-context data-state="<?= $this->escape($this->filters['state'] ?? '') ?>" data-kind="<?= $this->escape($this->filters['kind'] ?? '') ?>" data-group="<?= $this->escape($this->filters['group'] ?? '') ?>" data-version="<?= $this->escape($this->filters['version'] ?? '') ?>" data-stream-url="<?= $this->escape($this->streamUrl ?? '') ?>">
 <div class="controls"><form method="get" class="kube-filter-form">
-<div class="kube-search-row"><input class="search" type="search" name="name" aria-label="Object name" placeholder="<?= $this->translate('Search by exact object name') ?>" value="<?= $this->escape($this->filters['name'] ?? '') ?>"><button type="submit"><?= $this->translate('Search') ?></button></div>
+<div class="kube-search-row"><input class="search" type="search" name="name" aria-label="Object name" placeholder="<?= $this->translate('Search by name or part of a name. Use * as wildcard.') ?>" value="<?= $this->escape($this->filters['name'] ?? '') ?>"><button type="submit"><?= $this->translate('Search') ?></button></div>
 <?php foreach (['group', 'version', 'kind'] as $field): ?><input type="hidden" name="<?= $field ?>" value="<?= $this->escape($this->filters[$field] ?? '') ?>"><?php endforeach ?>
 <details class="kube-filter-options"><summary><?= $this->translate('Filters') ?></summary><div class="kube-filter-fields">
 <?php foreach (['cluster' => 'Cluster', 'namespace' => 'Namespace', 'labels' => 'Labels'] as $field => $label): ?><label><?= $this->translate($label) ?><input name="<?= $field ?>" value="<?= $this->escape($this->filters[$field] ?? '') ?>"></label><?php endforeach ?>

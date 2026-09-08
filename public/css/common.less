@@ -99,6 +99,15 @@
   border-radius: .4em;
 }
 
+.icinga-kubernetes-metrics label {
+  display: inline-flex; align-items: center; gap: .75em; margin: .4em 0 1em;
+}
+.icinga-kubernetes-metrics select.metrics-range {
+  background: @body-bg-color; color: @text-color;
+  border: 1px solid @gray-light; border-radius: .25em;
+  padding: .4em .65em; min-width: 9em; font: inherit;
+}
+
 .icinga-kubernetes-metrics .metric-series-legend {
   display: flex;
   flex-wrap: wrap;

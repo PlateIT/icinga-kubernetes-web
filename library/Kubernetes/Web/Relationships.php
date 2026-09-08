@@ -19,6 +19,16 @@ final class Relationships
             $add('Owner', $owner['kind'], $owner['name'], count($api) > 1 ? $api[0] : 'core', null, $owner['uid'] ?? null);
         }
         if ($namespace !== '') $add('Namespace', 'Namespace', $namespace, 'core', '');
+        if (($r['kind'] ?? '') === 'Event') {
+            foreach (['regarding', 'involvedObject', 'related'] as $key) {
+                $target = $m[$key] ?? [];
+                if (empty($target['kind'])) continue;
+                $api = explode('/', $target['apiVersion'] ?? 'v1');
+                $relation = 'Regarding';
+                if (! empty($target['fieldPath'])) $relation .= ' · ' . $target['fieldPath'];
+                $add($relation, $target['kind'], $target['name'] ?? null, count($api) > 1 ? $api[0] : 'core', $target['namespace'] ?? $namespace, $target['uid'] ?? null);
+            }
+        }
         $spec = $m['spec'] ?? [];
         $pod = ($r['kind'] ?? '') === 'Pod' ? $spec : ($spec['template']['spec'] ?? $spec['jobTemplate']['spec']['template']['spec'] ?? []);
         $add('Runs on', 'Node', $pod['nodeName'] ?? null, 'core', '');
