@@ -1,0 +1,17 @@
+<?php if ($this->error): ?>
+<div class="boxview"><h1><?= $this->translate('Kubernetes unavailable') ?></h1><p><?= $this->escape($this->error) ?></p></div>
+<?php else: ?>
+<div class="boxview">
+  <h1><?= $this->translate('Kubernetes synchronization') ?></h1>
+  <dl>
+    <dt><?= $this->translate('Cluster') ?></dt><dd><?= $this->escape($this->status['cluster'] ?? '-') ?></dd>
+    <dt><?= $this->translate('Database') ?></dt><dd><?= $this->escape($this->status['database'] ?? '-') ?></dd>
+    <dt><?= $this->translate('Inventory freshness') ?></dt><dd><?= $this->escape($this->status['freshness'] ?? '-') ?></dd>
+    <dt><?= $this->translate('Pending events') ?></dt><dd><?= (int) ($this->status['pendingEvents'] ?? 0) ?></dd>
+    <dt><?= $this->translate('Last applied') ?></dt><dd><?= $this->escape($this->status['lastAppliedAt'] ?? '-') ?></dd>
+  </dl>
+  <h2><?= $this->translate('Federation endpoints') ?></h2>
+  <?php if ($this->branches === []): ?><p><?= $this->translate('No federation endpoints configured.') ?></p><?php endif ?>
+  <ul><?php foreach ($this->branches as $branch): ?><li><?= $this->escape($branch['name']) ?>: <?= $this->escape($branch['freshness']) ?><?php if ($branch['latency'] !== null): ?> (<?= $this->escape($branch['latency']) ?>)<?php endif ?></li><?php endforeach ?></ul>
+</div>
+<?php endif ?>

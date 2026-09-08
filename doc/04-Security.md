@@ -1,99 +1,74 @@
 # Security
 
-Icinga for Kubernetes allows users to show different Kubernetes resources. Users may be restricted to a specific set of
-resources, by use of **permissions** and **restrictions**.
+Icinga Kubernetes Web 2 is a trusted server-side client of the central Icinga
+Kubernetes API. The browser and end user never receive an API token, Kubernetes
+credential, Prometheus credential or unrestricted API response. The module has
+no direct database, cluster or monitoring-system connection.
 
-## Permissions
+## Permission
 
-> If a role [limits users](#filters) to a specific set of results, the
-> permissions or refusals of the very same role only apply to these results.
- 
-If a user has permission to show one resource but lacks permissions for another resource that is dependent on or related
-to the first, the dependent resource will not appear in the detail view of the accessible resource.
+`kubernetes/resources/show` permits access to the dashboard, resource list,
+resource details and the module's live-data endpoints. Without this permission
+the controller rejects the request before it opens an API connection.
 
-This ensures that users can only see the specific resources they are authorized for, maintaining a strict boundary of
-visibility and data access.
+`kubernetes/resources/logs` separately permits loading current Pod logs. This
+right is not implied by normal resource visibility because application logs can
+contain sensitive business data.
 
-### Examples
+## Resource restriction
 
-If a user has permission to show **Deployments** but does not have permission to show **ReplicaSets**, the
-**Deployment** detail view will omit any associated **ReplicaSets**.
+`kubernetes/filter/resources` is an URL-encoded conjunction of exact API
+selectors. Supported fields are:
 
-Similarly, if a user can view **DaemonSets** but lacks permissions for **Pods** within the same namespace, the Pods will
-be excluded from the DaemonSet's detail view.
+- `cluster`
+- `group`
+- `version`
+- `kind`
+- `namespace`
+- `name`
+- `state`
+- `labels`, formatted as `key=value[,key=value]`
 
-Also, if a user lacks permission to show **ReplicaSets**, any **Events** related to **ReplicaSets** will not be shown at
-all in the **ListController**.
+Example:
 
-| Name                                     | Allow...                         |
-|------------------------------------------|----------------------------------|
-| kubernetes/config-maps/show              | to show config maps              |
-| kubernetes/cron-jobs/show                | to show cron jobs                |
-| kubernetes/daemon-sets/show              | to show daemon sets              |
-| kubernetes/deployments/show              | to show deployments              |
-| kubernetes/events/show                   | to show events                   |
-| kubernetes/ingresses/show                | to show ingresses                |
-| kubernetes/jobs/show                     | to show jobs                     |
-| kubernetes/nodes/show                    | to show nodes                    |
-| kubernetes/persistent-volume-claims/show | to show persistent volume claims |
-| kubernetes/persistent-volumes/show       | to show persistent volumes       |
-| kubernetes/pods/show                     | to show pods                     |
-| kubernetes/replica-sets/show             | to show replica sets             |
-| kubernetes/secrets/show                  | to show secrets                  |
-| kubernetes/services/show                 | to show services                 |
-| kubernetes/stateful-sets/show            | to show stateful sets            |
-| kubernetes/yaml/show                     | to show yaml                     |
+```text
+cluster=campus&namespace=payments&labels=app%3Dcheckout,environment%3Dproduction
+```
 
-## Restrictions
+Each granting role is an alternative (OR). Fields within one restriction are
+combined (AND), matching Icinga Web's role-widening semantics. A granting role
+without this restriction grants unrestricted resource visibility. Unknown
+fields, empty values, wildcards, negation and expressions are rejected
+fail-closed.
 
-### Filters
+Restrictions are intersected with the user's filters before each API list
+request. Results are checked again before rendering. Details, manifests, logs
+and metrics first load the inventory object and apply the same authorization;
+an unauthorized and an unknown ID both return `404`.
 
-Filters limit users to a specific set of results.
+## Live updates
 
-> **Note:**
->
-> Filters from multiple roles will widen available access.
+The upstream event payload never reaches the browser. The module reduces SSE
+bursts to payload-free invalidations containing only the latest numeric stream
+sequence, at most once per second. The browser performs a throttled partial
+refresh at most once per ten seconds. Restricted users deliberately receive no
+global SSE side channel and use 30-second polling. Unrestricted users also fall
+back to polling whenever SSE is unavailable.
 
-| Name                        | Description                                                       |
-|-----------------------------|-------------------------------------------------------------------|
-| kubernetes/filter/resources | Restrict access to the Kubernetes resources that match the filter |
+Freshness headers are accepted only as `live`, `stale` or `unavailable`; an
+unknown value fails the backend request instead of being presented as live.
+The live-metrics controller validates resource identity, cluster, time range,
+metric count and every metric descriptor, then emits only the documented chart
+fields. Additional trusted-API fields are never forwarded to the browser.
 
-`kubernetes/filter/resources` will only allow users to access matching Kubernetes resources. This applies to all
-resources.
+## Secrets and errors
 
-Allowed columns are:
-
-* annotation.name
-* annotation.value
-* label.name
-* label.value
-* namespace
-* name
-
-> **Note:**
->
-> Nodes, namespaces and persistent volumes do not belong to a namespace, therefore only the name is available for
-> filtering.
-
-## Restricted Permissions:
-
-Restricted permissions define how permissions and restrictions are combined to control a user's access to resources.
-Each role specifies what a user can access (permissions) and any limitations on that access (restrictions). When a user
-has multiple roles, they see resources according to the permissions and restrictions defined per each role, without
-merging or overlapping the restrictions across roles.
-
-### Example
-
-- **Role A**: Grants permission to view **deployments**, **replica sets**, and **pods**. Access is restricted within a specified **namespace**.
-
-- **Role B**: Grants permission to view **daemon sets** and **pods**, with access limited to a specific **namespace**.
-
-- **Role C**: Grants permission to view all resources, but restricts access to resources whose **name** matches a specified **pattern**.
-
-If a user is assigned all three roles:
-- They can see **deployments**, **replica sets**, and **pods** based on the namespace restriction from **Role A**.
-- They can see **daemon sets** and **pods** based on the namespace restrictions from **Role B**.
-- They can see all resources, matching the name restriction defined by **Role C**.
-
-This ensures that each resource type respects its specific role's restrictions, enabling precise and controlled access
-to resources.
+The API bearer token must be mounted as a Secret-backed file and referenced by
+`ICINGA_KUBERNETES_API_TOKEN_FILE` or `[api] token_file`. Plaintext environment
+and module-config tokens are unsupported. API responses are size-bounded (8 MiB
+individually and 32 MiB across one parallel request batch); user filters and
+composite cursors are bounded before any backend request. Backend bodies,
+transport details and credentials are never returned to the browser. All
+server-side API calls explicitly bypass environment HTTP proxies,
+because their internal bearer token must only reach the configured cluster
+service. Detailed failures are written only to the protected Icinga Web log.

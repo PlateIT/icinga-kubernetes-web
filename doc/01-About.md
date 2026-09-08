@@ -1,60 +1,42 @@
-# Icinga for Kubernetes Web
+# Icinga Kubernetes Web 2
 
-Icinga for Kubernetes is a set of components for monitoring and visualizing Kubernetes resources,
-consisting of
+Icinga Kubernetes Web is the trusted Icinga Web client for the central Icinga
+Kubernetes API. The module does not connect to PostgreSQL, Kubernetes,
+OpenShift, Prometheus or a federated cluster itself. Its server-side API client
+is the only data path.
 
-* the [Icinga for Kubernetes daemon](https://icinga.com/docs/icinga-kubernetes),
-  which uses the Kubernetes API to monitor the configuration and
-  status changes of Kubernetes resources synchronizing every change in a database, and
-* Icinga for Kubernetes Web, which connects to the database for visualizing Kubernetes resources and their state.
+The module provides:
 
-![Icinga for Kubernetes Overview](res/icinga-kubernetes-overview.png)
+* a combined cluster and federation overview;
+* server-filtered and cursor-paginated resources;
+* generic views for Kubernetes, OpenShift and operator-provided resources;
+* bounded live manifests, pod logs and resource-aware metrics through the API;
+* role-based resource restrictions and a separate permission for pod logs; and
+* stable resource links for Business Process integration.
 
-Though any of the Icinga for Kubernetes components can run either inside or outside Kubernetes clusters,
-including the database, common setup approaches include the following:
+The API owns discovery, persistence, federation and access to live source data.
+This keeps every Icinga Web replica stateless: replicas share neither a module
+database nor a writable module volume, and a restart does not rebuild an
+in-memory resource model.
 
-* All components run inside a Kubernetes cluster.
-* All components run outside a Kubernetes cluster.
-* Only the Icinga for Kubernetes daemon runs inside a Kubernetes cluster,
-  requiring configuration for an external service to connect to the database outside the cluster.
+## Multi-cluster behavior
 
-![Icinga Kubernetes Web Dashboard](res/icinga-kubernetes-dashboard.png)
-![Icinga Kubernetes Web Deployment](res/icinga-kubernetes-deployment.png)
-![Icinga Kubernetes Web Stateful Set](res/icinga-kubernetes-statefulset.png)
-![Icinga Kubernetes Web Replica Set](res/icinga-kubernetes-replicaset.png)
-![Icinga Kubernetes Web Favorites Dashboard](res/icinga-kubernetes-favorites-dashboard.png)
+Each cluster runs its own highly available API. A module normally talks to its
+local API. Configured one-hop federation endpoints let that API include remote
+branches without making the web module aware of remote credentials or network
+topology. The UI labels data as `live`, `stale` or `unavailable` according to
+the API response.
 
-## Multi-Cluster Support
-
-Icinga for Kubernetes supports multiple Kubernetes clusters by deploying several daemons,
-each connecting to a different cluster but writing data into the same database.
-The web interface accesses this database to display resource information and state,
-offering the flexibility to view aggregated data from all clusters or focus on a specific cluster.
-This setup ensures scalable monitoring and a unified view of resources across multiple Kubernetes environments.
-
-## Vision and Roadmap
-
-Although every Kubernetes cluster is different, Icinga for Kubernetes aims to provide a zero-configuration baseline for
-monitoring Kubernetes. Our goal is to make it easy to understand the complete state of clusters, including resources,
-workloads, relations, and performance. We strive to offer comprehensive monitoring that provides a clear and
-intuitive view of clusters' health, helping to identify problems and potential bottlenecks.
-
-The Kubernetes API is leveraged to retrieve information about resources and watch ongoing changes.
-This data is stored in a database to reduce pressure on the Kubernetes API and
-to enable powerful filtering through a relational model.
-
-Currently, Icinga for Kubernetes utilizes all available information from the Kubernetes API to
-determine the state of resources and clusters. In future versions, we plan to integrate metrics.
-
-We welcome your ideas on what should be included in the baseline.
-Do not hesitate to share your key metrics, important thresholds,
-or correlations used to set up alarms in your environments.
+Inventory state is served from PostgreSQL by the API. Logs, manifests and
+cluster metrics remain in the responsible cluster and are retrieved live only
+when a user requests them. No such live data is copied into Icinga Web.
 
 ## Installation
 
-To install Icinga for Kubernetes Web see [Installation](02-Installation.md).
+See [Installation](02-Installation.md) and
+[Configuration](03-Configuration.md).
 
 ## License
 
-Icinga for Kubernetes Web and the Icinga for Kubernetes Web documentation are licensed under the terms of the
-GNU Affero General Public License Version 3.
+Icinga Kubernetes Web and its documentation are licensed under the GNU Affero
+General Public License Version 3.

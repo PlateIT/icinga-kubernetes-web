@@ -1,0 +1,37 @@
+<?php use Icinga\Module\Kubernetes\Web\ResourceView; ?>
+<div class="icinga-module module-kubernetes">
+<div class="icinga-kubernetes-live" data-kube-context data-kind="<?= $this->escape($this->filters['kind'] ?? '') ?>" data-group="<?= $this->escape($this->filters['group'] ?? '') ?>" data-version="<?= $this->escape($this->filters['version'] ?? '') ?>" data-stream-url="<?= $this->escape($this->streamUrl ?? '') ?>">
+<div class="controls"><form method="get">
+  <?php foreach (['cluster', 'group', 'version', 'kind', 'namespace', 'name', 'labels', 'state'] as $field): ?>
+  <input name="<?= $field ?>" value="<?= $this->escape($this->filters[$field] ?? '') ?>" placeholder="<?= $field ?>">
+  <?php endforeach ?>
+  <?php if (! empty($this->filters['ownerUID'])): ?><input type="hidden" name="ownerUID" value="<?= $this->escape($this->filters['ownerUID']) ?>"><?php endif ?>
+  <button type="submit"><?= $this->translate('Filter') ?></button>
+  <label><input type="checkbox" name="showInactive" value="yes"<?= ($this->filters['showInactive'] ?? 'no') === 'yes' ? ' checked' : '' ?>> <?= $this->translate('Show scaled-down ReplicaSets') ?></label>
+</form></div>
+<?php if ($this->error): ?>
+<div class="boxview"><p><?= $this->escape($this->error) ?></p></div>
+<?php else: ?>
+<div class="content">
+<h1><?= $this->escape($this->title) ?></h1>
+<nav class="kube-kind-browser" aria-label="Available object types"></nav>
+<p class="icinga-kubernetes-freshness"><?= $this->escape($this->freshness ?? 'unknown') ?> &middot; <?= $this->escape($this->snapshot ?? '') ?></p>
+<table class="common-table table-row-selectable">
+<thead class="kube-list-heading"><tr><th><?= $this->translate('State') ?></th><th><?= $this->translate('Object') ?></th><th><?= $this->translate('Details') ?></th></tr></thead>
+<tbody>
+<?php foreach ($this->items as $item): ?>
+<?php $apiResource = implode('/', array_filter([$item['group'] ?: null, $item['version'], $item['kind']])); ?>
+<tr class="kube-resource-row"><td class="kube-state-cell"><span class="kube-state kube-state-<?= ResourceView::state($item) ?>"></span><small><?= $this->escape(strtoupper($item['state'])) ?></small></td><td><div class="kube-resource-context"><?= $this->escape($item['namespace'] ?? 'Cluster scoped') ?> · <?= $this->escape($item['kind']) ?> · <?= $this->escape($item['cluster']) ?></div><a class="kube-resource-name" href="<?= $this->href('kubernetes/resources/show', ['id' => $item['id']]) ?>"><?= $this->escape($item['name']) ?></a><p class="kube-resource-reason"><?= $this->escape($item['reason'] ?? '') ?></p>
+<?php foreach ($item['summary']['containers'] ?? [] as $container): ?><div class="kube-container-child"><span class="kube-state kube-state-<?= ResourceView::containerState($container) ?>"></span>↳ <?= $this->escape($container['name']) ?> · <?= $this->escape($container['phase']) ?> · <?= (int) $container['restarts'] ?> <?= $this->translate('restarts') ?></div><?php endforeach ?>
+</td><td class="kube-resource-facts"><?php foreach (array_intersect_key(ResourceView::facts($item), array_flip(['Node', 'Pod IP', 'Ready replicas', 'Desired replicas', 'Schedule', 'Capacity', 'Cluster IP', 'Host'])) as $label => $value): ?><div><small><?= $this->escape($this->translate($label)) ?>:</small> <?= $this->escape($value) ?></div><?php endforeach ?><small><?= $this->escape($item['observedAt']) ?></small></td></tr>
+<?php endforeach ?>
+</tbody></table>
+<?php if (empty($this->items)): ?><p><?= $this->translate('No resources match these filters and your permissions.') ?></p><?php endif ?>
+<?php if ($this->nextCursor): ?>
+<?php $next = $this->filters; $next['cursor'] = $this->nextCursor; ?>
+<p><a href="<?= $this->href('kubernetes/resources', $next) ?>"><?= $this->translate('Next page') ?></a></p>
+<?php endif ?>
+</div>
+<?php endif ?>
+</div>
+</div>

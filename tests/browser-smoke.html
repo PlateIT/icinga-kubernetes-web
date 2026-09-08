@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Kubernetes Web browser smoke</title></head>
+<body>
+<output id="result">pending</output>
+<section class="icinga-kubernetes-live" data-stream-url="/events">
+    <span class="resource-value">old</span>
+</section>
+<section class="icinga-kubernetes-metrics" data-metrics-url="/metrics">
+    <span class="metrics-status">pending</span>
+    <div class="metric-charts-row"></div>
+</section>
+<script>
+window.__moduleError = '';
+window.__fetches = [];
+window.addEventListener('error', function (event) {
+    window.__moduleError = event.message || 'script error';
+});
+window.EventSource = function (url) {
+    this.url = url;
+    this.listeners = {};
+    window.__eventSource = this;
+    setTimeout(function () {
+        if (this.onopen) this.onopen();
+        if (this.listeners.resource) this.listeners.resource({type: 'resource'});
+    }.bind(this), 10);
+};
+window.EventSource.prototype.addEventListener = function (name, callback) {
+    this.listeners[name] = callback;
+};
+window.EventSource.prototype.close = function () { this.closed = true; };
+window.fetch = function (url) {
+    window.__fetches.push(String(url));
+    if (String(url).endsWith('/metrics')) {
+        return Promise.resolve({
+            ok: true,
+            json: function () {
+                return Promise.resolve({
+                    source: 'cluster-monitoring-live',
+                    freshness: 'live',
+                    metrics: [{
+                        key: 'cpu', label: 'CPU', unit: 'cores',
+                        data: {data: {result: [{metric: {pod: 'demo'}, values: [[1, '0.5'], [2, '0.75']]}]}}
+                    }]
+                });
+            }
+        });
+    }
+    return Promise.resolve({
+        ok: true,
+        text: function () {
+            return Promise.resolve('<section class="icinga-kubernetes-live" data-stream-url="/events"><span class="resource-value">new</span></section>');
+        }
+    });
+};
+</script>
+<script src="../public/js/module.js"></script>
+<script>
+setTimeout(function () {
+    var failures = [];
+    if (window.__moduleError) failures.push(window.__moduleError);
+    if (! window.__eventSource || window.__eventSource.url !== '/events') failures.push('SSE was not connected');
+    if (document.querySelector('.resource-value').textContent !== 'new') failures.push('SSE refresh did not replace content');
+    if (! document.querySelector('figure[data-metric="cpu"] svg path')) failures.push('metric SVG was not rendered');
+    if (! document.querySelector('figcaption').textContent.includes('0.750 cores')) failures.push('metric value was not formatted');
+    if (document.querySelector('.metrics-status').textContent !== 'cluster-monitoring-live / live') failures.push('metric status is wrong');
+    if (! window.__fetches.some(function (url) { return url.endsWith('/metrics'); })) failures.push('metric endpoint was not requested');
+    document.getElementById('result').textContent = failures.length ? failures.join('; ') : 'ok';
+}, 1400);
+</script>
+</body>
+</html>

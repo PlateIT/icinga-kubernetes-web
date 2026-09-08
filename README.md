@@ -1,63 +1,141 @@
-# Icinga for Kubernetes Web
+# Icinga Kubernetes Web 2
 
-![Build Status](https://github.com/Icinga/icinga-kubernetes-web/actions/workflows/php.yml/badge.svg?branch=main)
-[![Github Tag](https://img.shields.io/github/tag/Icinga/icinga-kubernetes-web.svg)](https://github.com/Icinga/icinga-kubernetes-web/releases/latest)
+This Icinga Web module is the trusted UI client for the central Icinga
+Kubernetes API. It has no database resource, Kubernetes credentials,
+Prometheus credentials or direct connection to another cluster.
 
-Icinga for Kubernetes is a set of components for monitoring and visualizing Kubernetes resources,
-consisting of
+The module provides:
 
-* the [Icinga for Kubernetes daemon](https://github.com/Icinga/icinga-kubernetes),
-  which uses the Kubernetes API to monitor the configuration and
-  status changes of Kubernetes resources synchronizing every change in a database, and
-* Icinga for Kubernetes Web, which connects to the database for visualizing Kubernetes resources and their state.
+- cluster and federation health;
+- server-filtered, cursor-paginated resources with explicit cluster and GVK identity;
+- generic views for native Kubernetes, OpenShift and operator CRDs;
+- resource state, labels, conditions and bounded adapter summaries;
+- resource-aware live charts for default and adapter-provided metrics;
+- links used by the Business Process integration.
 
-![Icinga for Kubernetes Overview](doc/res/icinga-kubernetes-overview.png)
+The old per-kind ORM models and direct PostgreSQL queries were deliberately
+removed. A restart therefore reads the already materialized API state instead
+of rebuilding large PHP query graphs or warming a local cache.
 
-Though any of the Icinga for Kubernetes components can run either inside or outside Kubernetes clusters,
-including the database, common setup approaches include the following:
+## Configuration
 
-* All components run inside a Kubernetes cluster.
-* All components run outside a Kubernetes cluster.
-* Only the Icinga for Kubernetes daemon runs inside a Kubernetes cluster,
-  requiring configuration for an external service to connect to the database outside the cluster.
+The preferred deployment uses environment variables injected from Secrets:
 
-![Icinga Kubernetes Web Dashboard](doc/res/icinga-kubernetes-dashboard.png)
-![Icinga Kubernetes Web Deployment](doc/res/icinga-kubernetes-deployment.png)
-![Icinga Kubernetes Web Stateful Set](doc/res/icinga-kubernetes-statefulset.png)
-![Icinga Kubernetes Web Replica Set](doc/res/icinga-kubernetes-replicaset.png)
-![Icinga Kubernetes Web Favorites Dashboard](doc/res/icinga-kubernetes-favorites-dashboard.png)
+```text
+ICINGA_KUBERNETES_API_URL=http://icinga-kubernetes-api:8080
+ICINGA_KUBERNETES_API_TOKEN_FILE=/run/secrets/icinga-kubernetes/reader-token
+```
 
-## Multi-Cluster Support
+An Icinga Web module configuration remains possible:
 
-Icinga for Kubernetes supports multiple Kubernetes clusters by deploying several daemons,
-each connecting to a different cluster but writing data into the same database.
-The web interface accesses this database to display resource information and state,
-offering the flexibility to view aggregated data from all clusters or focus on a specific cluster.
-This setup ensures scalable monitoring and a unified view of resources across multiple Kubernetes environments.
+```ini
+[api]
+url = "http://icinga-kubernetes-api:8080"
+token_file = "/run/secrets/icinga-kubernetes/reader-token"
+timeout = 15
+```
 
-## Vision and Roadmap
+End users never receive the API token. Icinga Web permissions and restrictions
+are evaluated by the module; only its server-side client calls the API.
+Plaintext token values in environment variables or module configuration are
+deliberately unsupported.
+Unknown freshness headers fail closed, and live-metrics responses are validated
+and reduced to the chart contract before any JSON reaches the browser.
+The server-side client bypasses environment HTTP proxies for every API request;
+the API is an internal cluster service and must not leak its bearer token or
+traffic to an external proxy.
 
-Although every Kubernetes cluster is different, Icinga for Kubernetes aims to provide a zero-configuration baseline for
-monitoring Kubernetes. Our goal is to make it easy to understand the complete state of clusters, including resources,
-workloads, relations, and performance. We strive to offer comprehensive monitoring that provides a clear and
-intuitive view of clusters' health, helping to identify problems and potential bottlenecks.
+Dashboard status calls and role-restricted resource streams are issued in
+bounded parallel batches. A single JSON response is limited to 8 MiB and a
+batch to 32 MiB, so multiple role selectors cannot multiply memory use without
+a fixed ceiling. User filters and the module's composite cursor are likewise
+type- and length-bounded before the trusted API is contacted.
 
-The Kubernetes API is leveraged to retrieve information about resources and watch ongoing changes.
-This data is stored in a database to reduce pressure on the Kubernetes API and
-to enable powerful filtering through a relational model.
+## Metrics
 
-Currently, Icinga for Kubernetes utilizes all available information from the Kubernetes API to
-determine the state of resources and clusters. In future versions, we plan to integrate metrics.
+Resource lists refresh every 30 seconds using short polling requests. The Web
+interface does not open persistent SSE connections, since each proxied stream
+would occupy a PHP-FPM worker and could delay navigation and readiness checks.
 
-We welcome your ideas on what should be included in the baseline.
-Do not hesitate to share your key metrics, important thresholds,
-or correlations used to set up alarms in your environments.
+Navigation and the object-type browser use the PostgreSQL resource inventory,
+refreshed every 60 seconds. Only kinds with visible objects appear, including
+custom resources. Role selectors are applied by the resource-types API before
+aggregation. Counts are omitted when granting roles overlap. Deploy the API
+with filtered resource-types support before deploying this Web module.
 
-## Documentation
+Lists, navigation counts and deployment children hide apps ReplicaSets whose
+desired replica count is explicitly zero. Use "Show scaled-down ReplicaSets"
+to include historical revisions in lists or deployment details. Active revisions
+show ready/desired replicas; concurrent revisions remain visible during rollouts.
+Other kinds and resources with unknown replica counts remain visible. The API
+must support `hideZeroReplicaSets` before this default takes effect.
 
-Icinga for Kubernetes Web documentation is available at [icinga.com/docs](https://icinga.com/docs/icinga-kubernetes-web).
+Environment resolves explicit owners, namespace, node, service account,
+configuration/secret references and PVC/PV storage references. Pod owners are
+followed one additional hop to their workload. Services are connected by exact
+selectors, and Service details show selected Pods. Workload templates, Routes,
+Ingresses and autoscalers expose their declared references as well. Only
+authorized inventory matches become links; unresolved references retain their
+name and are explicitly marked. Secret values are never part of relationship
+data. Pod containers form a child tree with links to container detail rows.
+Lookups are bounded (64 references/manifests, batches of 16, 32 candidate
+services per role, 100 selected Pods per role); truncation is reported.
 
-## License
+The navigation offers dedicated views for standard Kubernetes kinds and
+OpenShift Routes. Resource details show operational properties, owners, direct
+children, container readiness/restarts, conditions and grouped labels. Annotation
+and manifest JSON remain available in collapsed technical sections. Child lists
+apply the same role restrictions as the resource list.
 
-Icinga for Kubernetes Web and the Icinga for Kubernetes Web documentation are licensed under the terms of the
-[GNU Affero General Public License Version 3](LICENSE).
+Pod charts include container CPU/memory, requests and limits, throttling,
+filesystem I/O and network errors. Workload charts associate pods through
+`kube_pod_owner` (and ReplicaSet ownership for Deployments), not name prefixes.
+PVC charts include capacity, requested/available space and inode usage. Time
+ranges cover 15 minutes, 1 hour, 3 hours and 6 hours. Missing series are reported
+explicitly and are never substituted with zeroes. Container requests/limits
+describe containers, not effective pod-level scheduling requirements.
+
+Metric contracts follow [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/metrics/workload/pod-metrics.md)
+and [cAdvisor](https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md).
+
+The resource detail page requests its metric catalog and samples through the
+server-side module controller. It neither embeds monitoring credentials nor
+executes browser-provided PromQL. Charts refresh every 30 seconds and omit an
+individual series when the responsible cluster monitoring backend does not
+provide it. The API supplies defaults for common Kubernetes/OpenShift kinds and
+can extend them for operator CRDs through declarative adapters. PodMonitor and
+ServiceMonitor objects show their currently selected targets and live `up`
+state.
+
+These cluster metrics remain in the responsible Kubernetes/OpenShift cluster.
+They are independent of Icinga check performance data shown through the Icinga
+Web Grafana module.
+
+## Development
+
+All runtime PHP files can be checked without a running Icinga installation:
+
+```sh
+find application library -name '*.php' -exec php -l {} \;
+```
+
+On Windows, the complete standalone suite additionally checks security,
+controllers, concurrent HTTP/freshness handling and starts a temporary local
+mock API. Three waves of ten fresh module processes each issue concurrent API
+queries into an intentionally serialized backlog; all cold starts together
+must complete within 30 seconds. This proves that a Web restart has no local
+inventory warm-up dependency. The suite loads the installed cURL extension
+only for the test processes and does not change `php.ini`:
+
+```powershell
+.\tests\run.ps1
+```
+
+The browser integration gate uses a temporary isolated Microsoft Edge profile
+and verifies SSE-triggered partial refreshes plus live metric rendering:
+
+```powershell
+.\tests\run-browser.ps1
+```
+
+Licensed under the GNU Affero General Public License Version 3; see [LICENSE](LICENSE).

@@ -1,0 +1,48 @@
+<?php use Icinga\Module\Kubernetes\Web\ResourceView; ?>
+<div class="icinga-module module-kubernetes">
+<?php if ($this->error): ?>
+<div class="content"><p><?= $this->escape($this->error) ?></p></div>
+<?php elseif ($this->resource): $r = $this->resource; $manifest = $this->manifest ?? []; $state = ResourceView::state($r); ?>
+<div class="content icinga-kubernetes-detail" data-kube-context data-kind="<?= $this->escape($r['kind']) ?>" data-group="<?= $this->escape($r['group']) ?>" data-version="<?= $this->escape($r['version']) ?>">
+<header class="kube-object-header"><span class="kube-state kube-state-<?= $state ?>"></span><div><h1><?= $this->escape($r['name']) ?></h1><p><?= $this->escape($r['kind']) ?> · <?= $this->escape($r['namespace'] ?? 'Cluster scoped') ?> · <?= $this->escape($r['cluster']) ?></p></div><strong class="kube-state-label"><?= $this->escape(strtoupper($state)) ?></strong></header>
+<section><h2><?= $this->translate('State reason') ?></h2><p><?= $this->escape($r['reason'] ?? '') ?: $this->translate('No additional state message') ?></p></section>
+<section><h2><?= $this->translate('Details') ?></h2><dl class="kube-details">
+<?php foreach (['Cluster' => $r['cluster'], 'Kind' => $r['kind'], 'Namespace' => $r['namespace'] ?? '—', 'Name' => $r['name']] + ResourceView::facts($r, $manifest) + ['UID' => $r['uid'], 'Resource version' => $r['resourceVersion'], 'Last observed' => $r['observedAt']] as $label => $value): ?>
+<dt><?= $this->escape($this->translate($label)) ?></dt><dd><?= $this->escape($value) ?></dd>
+<?php endforeach ?></dl></section>
+<section><h2><?= $this->translate('Environment') ?></h2>
+<?php $environment = ResourceView::environmentGroups($r, $this->connections ?? [], $this->children ?? []); ?>
+<h3><?= $this->translate('Visible objects') ?></h3><div class="kube-relations">
+<?php foreach ($environment['visible'] as $connection): $linked = $connection['resource']; ?>
+<?php if ($connection['current'] ?? false): ?>
+<div class="kube-object-tree"><div class="kube-related kube-current"><small><?= $this->escape($r['kind']) ?></small><strong><?= $this->escape($r['name']) ?></strong></div>
+<?php if ($r['kind'] === 'Pod'): ?><ul class="kube-container-tree">
+<?php foreach (ResourceView::containers($r, $manifest) as $label => $containers): ?>
+<?php foreach (ResourceView::sortByType($containers) as $container): ?><li><a class="kube-related" href="#<?= ResourceView::containerAnchor($r, $container) ?>"><small><span class="kube-state kube-state-<?= ResourceView::containerState($container) ?>"></span><?= $this->escape($this->translate($label)) ?> &middot; <?= $this->escape($container['phase'] ?? 'unknown') ?></small><strong><?= $this->escape($container['name']) ?></strong><small><?= (int) ($container['restarts'] ?? 0) ?> <?= $this->translate('restarts') ?></small></a></li><?php endforeach ?>
+<?php endforeach ?></ul><?php endif ?></div>
+<?php else: ?>
+<a class="kube-related" href="<?= $this->href('kubernetes/resources/show', ['id' => $linked['id']]) ?>"><small><span class="kube-state kube-state-<?= ResourceView::state($linked) ?>"></span><?= $this->escape($connection['kind']) ?> &middot; <?= $this->escape($this->translate($connection['relation'])) ?></small><strong><?= $this->escape($connection['name']) ?></strong>
+<?php if ($activity = ResourceView::replicaActivity($linked)): ?><small class="kube-replica-status"><?= $this->escape($this->translate($activity)) ?></small><?php endif ?></a>
+<?php endif ?>
+<?php endforeach ?></div>
+<?php if ($environment['unresolved']): ?><div class="kube-reference-area"><h3><?= $this->translate('Not in visible inventory') ?></h3><div class="kube-relations">
+<?php foreach ($environment['unresolved'] as $connection): ?><div class="kube-related kube-reference"><small><?= $this->escape($connection['kind']) ?> &middot; <?= $this->escape($this->translate($connection['relation'])) ?></small><strong><?= $this->escape($connection['name']) ?></strong></div><?php endforeach ?>
+</div></div><?php endif ?>
+<?php if ($r['kind'] === 'Deployment'): ?><p><a href="<?= $this->href('kubernetes/resources/show', ['id' => $r['id'], 'showInactive' => ($this->showInactive ?? false) ? 'no' : 'yes']) ?>"><?= ($this->showInactive ?? false) ? $this->translate('Hide scaled-down ReplicaSets') : $this->translate('Show scaled-down ReplicaSets') ?></a></p><?php endif ?>
+<?php if ($this->relationsError): ?><p><?= $this->escape($this->relationsError) ?></p><?php endif ?>
+<?php if ($this->childrenMore): ?><p><a href="<?= $this->href('kubernetes/resources', ['cluster' => $r['cluster'], 'ownerUID' => $r['uid'], 'showInactive' => ($this->showInactive ?? false) ? 'yes' : 'no']) ?>"><?= $this->translate('Show all child resources') ?></a></p><?php endif ?></section>
+<?php foreach (ResourceView::containers($r, $manifest) as $label => $containers): ?>
+<section><h2><?= $this->escape($this->translate($label)) ?></h2><table class="common-table kube-containers"><thead><tr><th><?= $this->translate('Container') ?></th><th><?= $this->translate('State') ?></th><th><?= $this->translate('Ready') ?></th><th><?= $this->translate('Restarts') ?></th><th><?= $this->translate('Image') ?></th></tr></thead><tbody>
+<?php foreach ($containers as $container): ?><tr id="<?= ResourceView::containerAnchor($r, $container) ?>" tabindex="-1"><td><strong><?= $this->escape($container['name']) ?></strong><?php if ($this->canShowLogs && $r['kind'] === 'Pod'): ?><br><a href="<?= $this->href('kubernetes/resources/show', ['id' => $r['id'], 'logs' => 'yes', 'container' => $container['name']]) ?>"><?= $this->translate('Logs') ?></a><?php endif ?></td><td><span class="kube-state kube-state-<?= ResourceView::containerState($container) ?>"></span><?= $this->escape($container['phase']) ?><?php if ($container['reason']): ?><br><?= $this->escape($container['reason']) ?><?php endif ?><?php if ($container['exitCode'] !== null): ?> · exit <?= (int) $container['exitCode'] ?><?php endif ?></td><td><?= $container['ready'] ? $this->translate('Yes') : $this->translate('No') ?></td><td><?= (int) $container['restarts'] ?></td><td><?= $this->escape($container['image']) ?></td></tr><?php endforeach ?>
+</tbody></table></section><?php endforeach ?>
+<section><h2><?= $this->translate('Conditions') ?></h2>
+<?php if (empty($r['conditions'])): ?><p><?= $this->translate('This object exposes no conditions.') ?></p><?php else: ?>
+<ul class="kube-conditions"><?php foreach ($r['conditions'] as $condition): ?><li><strong><?= $this->escape($condition['type']) ?></strong><span class="kube-condition-value"><?= $this->escape($condition['status']) ?></span><span><?= $this->escape($condition['reason'] ?? '') ?></span><?php if (! empty($condition['message'])): ?><p><?= $this->escape($condition['message']) ?></p><?php endif ?><?php if (! empty($condition['lastTransitionTime'])): ?><small><?= $this->escape($condition['lastTransitionTime']) ?></small><?php endif ?></li><?php endforeach ?></ul><?php endif ?></section>
+<section><h2><?= $this->translate('Labels') ?></h2><?php foreach (ResourceView::groupedLabels($r['labels'] ?? []) as $group => $labels): ?><h3 class="kube-label-group"><?= $this->escape($group) ?></h3><dl class="kube-details"><?php foreach ($labels as $key => $value): ?><dt><?= $this->escape($key) ?></dt><dd><?= $this->escape($value) ?></dd><?php endforeach ?></dl><?php endforeach ?></section>
+<?php if ($this->metricsUrl): ?><section class="icinga-kubernetes-metrics" data-metrics-url="<?= $this->escape($this->metricsUrl) ?>"><h2><?= $this->translate('Live metrics') ?></h2><p class="metrics-status"><?= $this->translate('Loading current cluster metrics...') ?></p><div class="metric-charts-row"></div></section><?php endif ?>
+<?php if ($this->liveError): ?><p><?= $this->escape($this->liveError) ?></p><?php endif ?>
+<?php if ($this->logs !== null): ?><section><h2><?= $this->translate('Pod logs') ?></h2><pre><?= $this->escape($this->logs) ?></pre></section><?php endif ?>
+<details><summary><?= $this->translate('Annotations') ?></summary><dl class="kube-details"><?php foreach ($r['annotations'] ?? [] as $key => $value): ?><dt><?= $this->escape($key) ?></dt><dd><pre><?= $this->escape($value) ?></pre></dd><?php endforeach ?></dl></details>
+<?php if ($this->manifest !== null): ?><details><summary><?= $this->translate('Live manifest') ?></summary><pre><?= $this->escape(json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?></pre></details><?php endif ?>
+</div><?php endif ?>
+</div>
