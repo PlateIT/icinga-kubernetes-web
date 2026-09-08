@@ -1,151 +1,145 @@
-/* Icinga for Kubernetes Web | (c) 2024 Icinga GmbH | AGPLv3 */
+/* Icinga Kubernetes Web 2 | AGPLv3 */
+.kube-reference-area { margin-top: 1.25em; padding-top: .5em; border-top: 1px solid rgba(128,144,160,.25); }
+.kube-object-tree { display: flex; flex-direction: column; gap: .6em; }
+.kube-container-tree { list-style: none; padding: 0 0 0 1.3em; margin: 0 0 0 1em; border-left: 1px solid rgba(128,144,160,.4); }
+.kube-container-tree li { position: relative; margin: .5em 0; }
+.kube-container-tree li:before { content: ''; position: absolute; left: -1.3em; top: 1.5em; width: 1.3em; border-top: 1px solid rgba(128,144,160,.4); }
+.kube-reference { border-style: dashed; }
+.kube-containers tr:target { outline: 2px solid #6bbcff; outline-offset: -2px; }
+.icinga-kubernetes-live > .controls,
+.icinga-kubernetes-live > .content,
+.icinga-kubernetes-detail { padding: 1em 1.25em; box-sizing: border-box; }
+.icinga-kubernetes-live > .controls { padding-bottom: 0; }
+.icinga-kubernetes-live .controls input[type="checkbox"] { width: auto; min-width: 0; }
+.kube-replica-status { margin-top: .4em; font-weight: bold; }
+.icinga-kubernetes-live .controls input { flex: 1 1 10em; width: 10em; min-width: 0; }
+.kube-kind-browser { display: flex; flex-wrap: wrap; gap: .5em; margin: 1em 0; }
+.kube-kind-browser a { padding: .4em .7em; border: 1px solid rgba(128,144,160,.35); border-radius: .35em; }
+.kube-kind-browser a.active { border-color: #0095bf; background: rgba(0,149,191,.15); }
+.kube-list-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.kube-resource-row { border-bottom: 1px solid rgba(128,144,160,.22); }
+.kube-resource-row:hover { background: rgba(128,144,160,.08); }
+.kube-state-cell small { font-size: .65em; opacity: .8; margin-top: .4em; }
+.kube-container-child { padding: .2em 0; }
+.kube-container-child .kube-state { width: 7px; height: 7px; }
+.icinga-kubernetes-detail { max-width: 120em; }
+.icinga-kubernetes-detail section { padding: 1em; border: 1px solid rgba(128,144,160,.22); border-radius: .4em; }
+.icinga-kubernetes-detail h2 { margin-top: 0; }
+.kube-details dt { opacity: .75; }
+.kube-related { background: rgba(128,144,160,.08); }
+.kube-conditions li { background: rgba(128,144,160,.05); }
+.icinga-kubernetes-metrics figcaption { font-weight: bold; padding: .6em 0; }
+.kube-state { display: inline-block; flex: 0 0 12px; width: 12px; height: 12px; border-radius: 50%; background: #839099; margin-right: .5em; vertical-align: middle; box-shadow: 0 0 0 2px rgba(128,144,160,.12); }
+.kube-state-ok { background: #44bb88; }
+.kube-state-warning { background: #ffbb44; }
+.kube-state-critical { background: #ee5566; }
+.kube-state-unknown { background: #8899aa; }
+.kube-object-header { display: flex; align-items: center; gap: 1em; padding: 1em 0; border-bottom: 1px solid #657080; }
+.kube-object-header h1, .kube-object-header p { margin: .2em 0; }
+.kube-state-label { margin-left: auto; }
+.icinga-kubernetes-detail section { margin: 1.5em 0; }
+.kube-details { display: grid; grid-template-columns: minmax(10em, 18em) minmax(0, 1fr); gap: .5em 1.5em; }
+.kube-details dt, .kube-details dd { margin: 0; overflow-wrap: anywhere; }
+.kube-relations { display: flex; flex-wrap: wrap; align-items: center; gap: .75em; }
+.kube-related { display: flex; flex-direction: column; padding: .75em 1em; border: 1px solid #657080; border-radius: .4em; max-width: 28em; overflow-wrap: anywhere; }
+.kube-current { border: 2px solid #6bbcff; }
+.kube-conditions { padding: 0; list-style: none; }
+.kube-conditions li { padding: .75em 1em; border-left: .2em solid #657080; margin-bottom: .5em; }
+.kube-condition-value { margin: 0 1em; font-weight: bold; }
+.kube-label-group { padding: .35em .5em; background: rgba(128, 144, 160, .15); }
+.kube-containers td { overflow-wrap: anywhere; max-width: 35em; }
+.icinga-kubernetes-detail details { margin: 1.5em 0; }
+.icinga-kubernetes-detail summary { cursor: pointer; font-weight: bold; padding: .5em 0; }
+.icinga-kubernetes-detail pre { max-height: 24em; overflow: auto; white-space: pre-wrap; }
+.kube-resource-row td { vertical-align: top; padding-top: .8em; padding-bottom: .8em; }
+.kube-state-cell { width: 2.5em; }
+.kube-state-cell small { display: block; }
+.kube-resource-context { opacity: .75; font-size: .9em; }
+.kube-resource-name { font-weight: bold; font-size: 1.1em; }
+.kube-resource-reason { margin: .3em 0; }
+.kube-container-child { margin-left: 1em; font-size: .9em; }
+.kube-resource-facts { width: 28%; font-size: .9em; line-height: 1.7; overflow-wrap: anywhere; }
+.kube-resource-facts span { display: inline-block; margin: 0 1em .3em 0; }
+.kube-resource-facts > small { display: block; opacity: .7; }
+@media (max-width: 800px) { .kube-details { grid-template-columns: 1fr; } .kube-details dd { margin-bottom: .5em; } .kube-resource-facts { width: auto; } }
 
-pre {
-  // TODO(el): Why is this not the default in the IPL?
-  .monospace-font();
-}
+.icinga-kubernetes-live {
+  .controls form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5em;
+  }
 
-.icinga-state-text,
-.namespace-phase,
-.persistent-volume-phase,
-.persistent-volume-claim-phase {
-  text-transform: uppercase;
-}
-
-.state-ball {
-  // Main use case is the event list, which also contains informational events.
-  &.state-none {
-    border: 1px solid @gray-light;
+  .controls input {
+    min-width: 10em;
   }
 }
 
-.margin-to-ball {
-  margin-left: .2em;
+.icinga-kubernetes-freshness {
+  margin: .5em 0;
 }
 
-.container-list-item > .visual > .state-ball,
-.container-list-item .caption .icinga-state-reason > .icon-container > .state-ball,
-.container-row > .icon-container > .state-ball,
-.container-detail > .details > .horizontal-key-value > .value > .state-ball,
-.container-detail > section > .icinga-state-reason > .icon-container > .state-ball {
-  // Display squares instead of balls for containers.
-  border-radius: initial;
+.icinga-kubernetes-metrics .metric-charts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
 }
 
-.controls {
-  &:not(.no-shadow) {
-    // Copied from Icinga DB Web
-    -moz-box-shadow: 0 0 0 1px var(--gray-lighter, #4b4b4b);
-    -webkit-box-shadow: 0 0 0 1px var(--gray-lighter, #4b4b4b);
-    box-shadow: 0 0 0 1px var(--gray-lighter, #4b4b4b);
+.icinga-kubernetes-metrics figure {
+  flex: 1 1 24em;
+  margin: 0;
+}
+
+.icinga-kubernetes-metrics svg {
+  width: 100%;
+  max-height: 12em;
+  color: inherit;
+  background: rgba(128,144,160,.07);
+  border: 1px solid rgba(128,144,160,.25);
+  border-radius: .4em;
+}
+
+.icinga-kubernetes-metrics label {
+  display: inline-flex; align-items: center; gap: .75em; margin: .4em 0 1em;
+}
+.icinga-kubernetes-metrics select.metrics-range {
+  background: @body-bg-color; color: @text-color;
+  border: 1px solid @gray-light; border-radius: .25em;
+  padding: .4em .65em; min-width: 9em; font: inherit;
+}
+
+.icinga-kubernetes-metrics .metric-series-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25em 1em;
+  margin: .25em 0 0;
+  padding: 0;
+  font-size: .9em;
+  list-style: none;
+}
+
+.icinga-kubernetes-metrics .metric-series-legend li::before {
+  display: inline-block;
+  width: .75em;
+  height: .2em;
+  margin-right: .35em;
+  vertical-align: middle;
+  background: var(--metric-color);
+  content: '';
+}
+
+.icinga-kubernetes-live .controls form.kube-filter-form { display: block; }
+.kube-filter-form {
+  .kube-search-row { display: flex; align-items: center; gap: .5em; }
+  .kube-search-row input.search { flex: 1; width: 100%; max-width: none; }
+  input:not([type="checkbox"]), select, button {
+    background: @body-bg-color; color: @text-color;
+    border: 1px solid @gray-light; border-radius: .25em; padding: .45em .6em;
   }
-
-  &:not(.default-layout) > :not(:only-child) {
-    margin-bottom: 0.5em;
-  }
-
-  a.subject {
-    font-weight: normal;
-    cursor: default;
-    pointer-events: none;
-  }
-
-  .favorite-toggle {
-    width: auto;
-
-    .control-group {
-      justify-content: flex-end;
-      max-height: 24px;
-      margin: 0;
-
-      label {
-        margin-right: 0;
-        text-align: right;
-      }
-    }
-  }
-
-  .limit-control,
-  .view-mode-switcher,
-  .sort-control,
-  .favorite-toggle {
-    float: right;
-    margin-left: 1em;
-  }
-
-  .limit-control,
-  .view-mode-switcher,
-  .favorite-toggle {
-    margin-right: 0;
-  }
-
-  .item-list .list-item {
-    .main {
-      padding: .25em 0;
-    }
-
-    .visual {
-      width: 1.2em;
-      // Calculate the padding so that the icon is vertically centered in the minimal view.
-      padding: ~"calc((24px - (12px * 0.75 * 1.5)) / 2)" 0;
-    }
-  }
-}
-
-.horizontal-key-value,
-.vertical-key-value {
-  > .value {
-    .text-ellipsis();
-
-    > .empty-state {
-      display: inline-block;
-    }
-  }
-}
-
-.object-detail {
-  .horizontal-key-value,
-  .vertical-key-value {
-    > .value {
-      white-space: normal;
-    }
-  }
-}
-
-.namespace-phase-active {
-  color: @state-ok;
-}
-
-.pv-phase-pending {
-  color: @color-pending;
-}
-
-.pv-phase-available,
-.pv-phase-bound {
-  color: @color-ok;
-}
-
-.pv-phase-released {
-  color: @color-warning;
-}
-
-.pv-phase-failed {
-  color: @color-critical;
-}
-
-.pvc-phase-pending {
-  color: @color-pending;
-}
-
-.pvc-phase-bound {
-  color: @color-ok;
-}
-
-.pvc-phase-lost {
-  color: @color-critical;
-}
-
-// TODO(jr): Remove if https://github.com/Icinga/icingaweb2/pull/5456 is merged
-.collapsible.collapsed:not(details) {
-  overflow: visible clip;
+  button { display: inline-block; color: @icinga-blue; cursor: pointer; }
+  .kube-filter-options { margin-top: .6em; }
+  summary { color: @icinga-blue; cursor: pointer; }
+  .kube-filter-fields { display: flex; flex-wrap: wrap; align-items: end; gap: .75em; padding: .75em 0; }
+  .kube-filter-fields label { display: flex; flex-direction: column; gap: .25em; }
+  .kube-filter-fields label.kube-inactive-filter { flex-direction: row; align-items: center; }
 }
