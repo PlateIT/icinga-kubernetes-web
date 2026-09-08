@@ -47,13 +47,24 @@
                 a.title = [item.group || 'core', item.version, item.kind].join('/');
                 return a;
             }
-            if (list.dataset.kubeInventory !== signature) {
+            if (list.dataset.kubeInventory !== signature || list.querySelectorAll('[data-kube-kind]').length !== items.length) {
                 list.querySelectorAll('[data-kube-kind]').forEach(node => node.remove());
                 items.forEach(item => { const li = document.createElement('li'); li.className = 'nav-item'; li.dataset.kubeKind = item.kind; li.appendChild(link(item)); list.appendChild(li); });
                 list.dataset.kubeInventory = signature;
             }
             mark(base, base.closest('li'));
             list.querySelectorAll('[data-kube-kind]').forEach(li => mark(li.querySelector('a'), li));
+            // The core navigation stores a DOM path and restores it on refresh.
+            // Register the dynamically selected entry there too, not only in CSS.
+            const selected = list.querySelector('a[aria-current="page"]');
+            if (selected && window.icinga && window.icinga.behaviors.navigation) {
+                const navigation = window.icinga.behaviors.navigation;
+                const path = window.icinga.utils.getDomPath(selected.closest('li'));
+                if (JSON.stringify(navigation.active) !== JSON.stringify(path)
+                    || ! list.closest('li').classList.contains('active')) {
+                    navigation.setActiveAndSelected(window.jQuery(selected));
+                }
+            }
             document.querySelectorAll('.kube-kind-browser').forEach(browser => {
                 if (browser.dataset.inventory !== signature) {
                     browser.textContent = '';
