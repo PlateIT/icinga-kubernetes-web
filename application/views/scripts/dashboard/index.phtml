@@ -8,7 +8,7 @@
     <dt><?= $this->translate('Database') ?></dt><dd><?= $this->escape($this->status['database'] ?? '-') ?></dd>
     <dt><?= $this->translate('Inventory freshness') ?></dt><dd><?= $this->escape($this->status['freshness'] ?? '-') ?></dd>
     <dt><?= $this->translate('Pending events') ?></dt><dd><?= (int) ($this->status['pendingEvents'] ?? 0) ?></dd>
-    <dt><?= $this->translate('Last applied') ?></dt><dd><?= $this->escape($this->status['lastAppliedAt'] ?? '-') ?></dd>
+    <dt><?= $this->translate('Last applied') ?></dt><dd><?= $this->escape(\Icinga\Module\Kubernetes\Web\ResourceView::timestamp($this->status['lastAppliedAt'] ?? null)) ?></dd>
   </dl>
   <h2><?= $this->translate('Federation endpoints') ?></h2>
   <?php if ($this->branches === []): ?><p><?= $this->translate('No federation endpoints configured.') ?></p><?php endif ?>

@@ -20,7 +20,7 @@
             function matches(a) {
                 if (! context) return false;
                 const q = new URL(a.href, window.location.href).searchParams;
-                if (! context.dataset.kind) return ! q.get('kind');
+                if (! context.dataset.kind) return ! q.get('kind') && (q.get('state') || '') === (context.dataset.state || '');
                 return (q.get('kind') || '') === (context.dataset.kind || '')
                     && (! context.dataset.group || (q.get('group') || 'core') === context.dataset.group)
                     && (! context.dataset.version || q.get('version') === context.dataset.version);
@@ -53,6 +53,9 @@
                 list.dataset.kubeInventory = signature;
             }
             mark(base, base.closest('li'));
+            list.querySelectorAll('a').forEach(a => {
+                if (new URL(a.href, window.location.href).searchParams.get('state') === 'problem') mark(a, a.closest('li'));
+            });
             list.querySelectorAll('[data-kube-kind]').forEach(li => mark(li.querySelector('a'), li));
             // The core navigation stores a DOM path and restores it on refresh.
             // Register the dynamically selected entry there too, not only in CSS.

@@ -299,5 +299,19 @@ namespace {
     foreach ($client->calls as $call) {
         if ($call[0] === 'many') foreach ($call[1] as $request) check($request['query']['namespace'] === 'payments', 'Related lookups must preserve role namespace restrictions');
     }
+    $client = new FakeClient();
+    $client->many = static function (array $requests): array {
+        check(count($requests) === 3, 'Problem overview queries all three non-OK states');
+        foreach ($requests as $request) {
+            check(in_array($request['query']['state'], ['critical', 'warning', 'unknown'], true), 'Problem query excludes OK');
+            check($request['query']['namespace'] === 'payments', 'Problem query preserves authorization');
+        }
+        return array_fill(0, 3, ['items' => [], 'snapshot' => 'now', 'freshness' => 'live']);
+    };
+    $controller = new TestResourcesController($client, new FakeAccess([['namespace' => 'payments']]));
+    $controller->permissions = ['kubernetes/resources/show'];
+    $controller->params = new TestParams(['state' => 'problem']);
+    $controller->indexAction();
+    check($controller->view->error === null && $controller->view->title === 'Kubernetes Problems', 'Problem overview failed');
     echo "standalone controller integration tests: ok\n";
 }

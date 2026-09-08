@@ -8,7 +8,7 @@
 <section><h2><?= $this->translate('State reason') ?></h2><p><?= $this->escape($r['reason'] ?? '') ?: $this->translate('No additional state message') ?></p></section>
 <section><h2><?= $this->translate('Details') ?></h2><dl class="kube-details">
 <?php foreach (['Cluster' => $r['cluster'], 'Kind' => $r['kind'], 'Namespace' => $r['namespace'] ?? '—', 'Name' => $r['name']] + ResourceView::facts($r, $manifest) + ['UID' => $r['uid'], 'Resource version' => $r['resourceVersion'], 'Last observed' => $r['observedAt']] as $label => $value): ?>
-<dt><?= $this->escape($this->translate($label)) ?></dt><dd><?= $this->escape($value) ?></dd>
+<dt><?= $this->escape($this->translate($label)) ?></dt><dd><?= $this->escape(in_array($label, ['Created', 'Last observed'], true) ? ResourceView::timestamp($value) : $value) ?></dd>
 <?php endforeach ?></dl></section>
 <section><h2><?= $this->translate('Environment') ?></h2>
 <?php $environment = ResourceView::environmentGroups($r, $this->connections ?? [], $this->children ?? []); ?>
@@ -37,12 +37,12 @@
 </tbody></table></section><?php endforeach ?>
 <section><h2><?= $this->translate('Conditions') ?></h2>
 <?php if (empty($r['conditions'])): ?><p><?= $this->translate('This object exposes no conditions.') ?></p><?php else: ?>
-<ul class="kube-conditions"><?php foreach ($r['conditions'] as $condition): ?><li><strong><?= $this->escape($condition['type']) ?></strong><span class="kube-condition-value"><?= $this->escape($condition['status']) ?></span><span><?= $this->escape($condition['reason'] ?? '') ?></span><?php if (! empty($condition['message'])): ?><p><?= $this->escape($condition['message']) ?></p><?php endif ?><?php if (! empty($condition['lastTransitionTime'])): ?><small><?= $this->escape($condition['lastTransitionTime']) ?></small><?php endif ?></li><?php endforeach ?></ul><?php endif ?></section>
-<section><h2><?= $this->translate('Labels') ?></h2><?php foreach (ResourceView::groupedLabels($r['labels'] ?? []) as $group => $labels): ?><h3 class="kube-label-group"><?= $this->escape($group) ?></h3><dl class="kube-details"><?php foreach ($labels as $key => $value): ?><dt><?= $this->escape($key) ?></dt><dd><?= $this->escape($value) ?></dd><?php endforeach ?></dl><?php endforeach ?></section>
+<ul class="kube-conditions"><?php foreach ($r['conditions'] as $condition): ?><li><strong><?= $this->escape($condition['type']) ?></strong><span class="kube-condition-value"><?= $this->escape($condition['status']) ?></span><span><?= $this->escape($condition['reason'] ?? '') ?></span><?php if (! empty($condition['message'])): ?><p><?= $this->escape($condition['message']) ?></p><?php endif ?><?php if (! empty($condition['lastTransitionTime'])): ?><small><?= $this->escape(ResourceView::timestamp($condition['lastTransitionTime'])) ?></small><?php endif ?></li><?php endforeach ?></ul><?php endif ?></section>
+<section><h2><?= $this->translate('Labels') ?></h2><?php foreach (ResourceView::groupedLabels($r['labels'] ?? []) as $group => $labels): ?><h3 class="kube-label-group"><?= $this->escape($group) ?></h3><dl class="kube-details"><?php foreach ($labels as $key => $value): ?><dt><?= $this->escape($key) ?></dt><dd><?= $this->escape(in_array($label, ['Created', 'Last observed'], true) ? ResourceView::timestamp($value) : $value) ?></dd><?php endforeach ?></dl><?php endforeach ?></section>
 <?php if ($this->metricsUrl): ?><section class="icinga-kubernetes-metrics" data-metrics-url="<?= $this->escape($this->metricsUrl) ?>"><h2><?= $this->translate('Live metrics') ?></h2><p class="metrics-status"><?= $this->translate('Loading current cluster metrics...') ?></p><div class="metric-charts-row"></div></section><?php endif ?>
 <?php if ($this->liveError): ?><p><?= $this->escape($this->liveError) ?></p><?php endif ?>
 <?php if ($this->logs !== null): ?><section><h2><?= $this->translate('Pod logs') ?></h2><pre><?= $this->escape($this->logs) ?></pre></section><?php endif ?>
-<details><summary><?= $this->translate('Annotations') ?></summary><dl class="kube-details"><?php foreach ($r['annotations'] ?? [] as $key => $value): ?><dt><?= $this->escape($key) ?></dt><dd><pre><?= $this->escape($value) ?></pre></dd><?php endforeach ?></dl></details>
+<details><summary><?= $this->translate('Annotations') ?></summary><dl class="kube-details"><?php foreach ($r['annotations'] ?? [] as $key => $value): ?><dt><?= $this->escape($key) ?></dt><dd><pre><?= $this->escape(in_array($label, ['Created', 'Last observed'], true) ? ResourceView::timestamp($value) : $value) ?></pre></dd><?php endforeach ?></dl></details>
 <?php if ($this->manifest !== null): ?><details><summary><?= $this->translate('Live manifest') ?></summary><pre><?= $this->escape(json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?></pre></details><?php endif ?>
 </div><?php endif ?>
 </div>

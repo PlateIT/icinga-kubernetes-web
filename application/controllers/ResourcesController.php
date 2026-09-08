@@ -152,13 +152,26 @@ class ResourcesController extends Controller
             $access = $this->createResourceAccess();
             $selectors = $access->selectors();
             $selectorList = $selectors ?: [[]];
+            $problems = ($params['state'] ?? '') === 'problem';
+            if ($problems) {
+                $expanded = [];
+                foreach ($selectorList as $selector) {
+                    foreach (['critical', 'warning', 'unknown'] as $state) {
+                        $combined = $this->intersect(['state' => $state], $selector);
+                        if ($combined !== null) $expanded[] = $combined;
+                    }
+                }
+                $selectorList = $expanded;
+            }
             $cursors = $this->decodeCursor((string) ($params['cursor'] ?? ''), count($selectorList));
             unset($params['cursor']);
             $requests = [];
             $requestIndexes = [];
             $pages = array_fill(0, count($selectorList), ['items' => []]);
             foreach ($selectorList as $index => $selector) {
-                $restricted = $this->intersect($params, $selector);
+                $queryParams = $params;
+                if ($problems) unset($queryParams['state']);
+                $restricted = $this->intersect($queryParams, $selector);
                 if ($restricted !== null) {
                     $restricted['order'] = 'id';
                     unset($restricted['showInactive']);
@@ -213,6 +226,7 @@ class ResourcesController extends Controller
             $this->view->freshness = $freshness;
             $this->view->filters = $params;
             $this->view->title = ! empty($params['kind']) ? $params['kind'] . ' resources' : $this->translate('All Kubernetes resources');
+            if ($problems) $this->view->title = $this->translate('Kubernetes Problems');
             $this->view->error = null;
             // A proxied SSE connection occupies a PHP-FPM worker per browser tab.
             // Use short polling requests for every role so live lists cannot
@@ -473,7 +487,7 @@ class ResourcesController extends Controller
         if (strlen($value) > $maximum || str_contains($value, "\0")) {
             throw new InvalidArgumentException('Invalid resource filter');
         }
-        if ($name === 'state' && ! in_array($value, ['ok', 'warning', 'critical', 'unknown'], true)) {
+        if ($name === 'state' && ! in_array($value, ['ok', 'warning', 'critical', 'unknown', 'problem'], true)) {
             throw new InvalidArgumentException('Invalid resource state');
         }
 

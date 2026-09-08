@@ -118,3 +118,19 @@
   background: var(--metric-color);
   content: '';
 }
+
+.icinga-kubernetes-live .controls form.kube-filter-form { display: block; }
+.kube-filter-form {
+  .kube-search-row { display: flex; align-items: center; gap: .5em; }
+  .kube-search-row input.search { flex: 1; width: 100%; max-width: none; }
+  input:not([type="checkbox"]), select, button {
+    background: @body-bg-color; color: @text-color;
+    border: 1px solid @gray-light; border-radius: .25em; padding: .45em .6em;
+  }
+  button { display: inline-block; color: @icinga-blue; cursor: pointer; }
+  .kube-filter-options { margin-top: .6em; }
+  summary { color: @icinga-blue; cursor: pointer; }
+  .kube-filter-fields { display: flex; flex-wrap: wrap; align-items: end; gap: .75em; padding: .75em 0; }
+  .kube-filter-fields label { display: flex; flex-direction: column; gap: .25em; }
+  .kube-filter-fields label.kube-inactive-filter { flex-direction: row; align-items: center; }
+}

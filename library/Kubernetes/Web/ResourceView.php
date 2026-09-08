@@ -5,6 +5,16 @@ namespace Icinga\Module\Kubernetes\Web;
 /** Presentation of API resources; never emits HTML or reads credentials. */
 final class ResourceView
 {
+    public static function timestamp(?string $value): string
+    {
+        if (! $value) return '—';
+        try {
+            return \Icinga\Date\DateFormatter::formatDateTime((new \DateTimeImmutable($value))->getTimestamp());
+        } catch (\Exception $_) {
+            return '—';
+        }
+    }
+
     public static function environmentGroups(array $resource, array $connections, array $children): array
     {
         $visible = []; $unresolved = [];

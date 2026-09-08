@@ -11,6 +11,11 @@ $section->add(N_('Resources'), [
     'url'         => 'kubernetes/resources',
     'priority'    => 10
 ]);
+$section->add(N_('Problems'), [
+    'url' => 'kubernetes/resources',
+    'urlParameters' => ['state' => 'problem'],
+    'priority' => 5
+]);
 $this->providePermission(
     'kubernetes/resources/show',
     $this->translate('Allow access to Kubernetes resources through the module API')
